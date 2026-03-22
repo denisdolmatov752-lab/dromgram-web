@@ -1,0 +1,22 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/users.controller');
+const { authenticateJWT } = require('../middleware/auth');
+const { uploadAvatar } = require('../middleware/upload');
+
+router.use(authenticateJWT);
+router.get('/me', ctrl.getMe);
+router.put('/me', ctrl.updateMe);
+router.post('/me/avatar', uploadAvatar, ctrl.uploadAvatar);
+router.delete('/me/avatar', ctrl.deleteAvatar);
+router.get('/me/sessions', ctrl.getSessions);
+router.delete('/me/sessions', ctrl.revokeAllSessions);
+router.delete('/me/sessions/:sessionId', ctrl.revokeSession);
+router.put('/me/privacy', ctrl.updatePrivacy);
+router.put('/me/password', ctrl.setPassword);
+router.get('/me/gifts', ctrl.getMyGifts);
+router.post('/me/premium', ctrl.activatePremium);
+router.get('/me/stars', ctrl.getMyStars);
+router.get('/username/:username', ctrl.getUserByUsername);
+router.get('/:id', ctrl.getUserById);
+router.get('/:id/gifts', ctrl.getUserGifts);
+module.exports = router;

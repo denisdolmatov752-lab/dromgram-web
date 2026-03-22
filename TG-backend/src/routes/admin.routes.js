@@ -1,0 +1,12 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/admin.controller');
+const { authenticateJWT, requireAdmin } = require('../middleware/auth');
+router.use(authenticateJWT, requireAdmin);
+router.get('/stats', ctrl.getStats);
+router.get('/users', ctrl.getUsers);
+router.put('/users/:id/ban', ctrl.banUser);
+router.put('/users/:id/unban', ctrl.unbanUser);
+router.delete('/users/:id', ctrl.deleteUser);
+router.get('/chats', ctrl.getChats);
+router.delete('/messages/:id', ctrl.deleteMessage);
+module.exports = router;

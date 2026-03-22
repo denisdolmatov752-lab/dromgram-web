@@ -1,0 +1,10 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/folders.controller');
+const { authenticateJWT } = require('../middleware/auth');
+router.use(authenticateJWT);
+router.get('/', ctrl.getFolders);
+router.post('/', ctrl.createFolder);
+router.put('/reorder', ctrl.reorderFolders);
+router.put('/:id', ctrl.updateFolder);
+router.delete('/:id', ctrl.deleteFolder);
+module.exports = router;

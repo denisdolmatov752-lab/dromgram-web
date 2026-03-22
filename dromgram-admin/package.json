@@ -1,0 +1,28 @@
+{
+  "name": "dromgram-admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite --port 4002",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3",
+    "axios": "^1.6.7",
+    "zustand": "^4.5.2",
+    "@tanstack/react-query": "^5.28.4",
+    "recharts": "^2.12.2",
+    "lucide-react": "^0.356.0",
+    "date-fns": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.67",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.4.2",
+    "vite": "^5.2.0"
+  }
+}

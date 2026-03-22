@@ -1,0 +1,9 @@
+const adminService = require('../services/admin.service');
+const wrap = (fn) => async (req, res, next) => { try { res.json({ success: true, data: await fn(req) }); } catch(err) { next(err); } };
+exports.getUsers = wrap((req) => adminService.getUsers(req.query.page, req.query.limit, req.query.search, req.query.filter));
+exports.banUser = wrap((req) => adminService.banUser(req.params.id));
+exports.unbanUser = wrap((req) => adminService.unbanUser(req.params.id));
+exports.deleteUser = wrap(async (req) => { await adminService.deleteUser(req.params.id); return {}; });
+exports.getStats = wrap(() => adminService.getStats());
+exports.getChats = wrap((req) => adminService.getChats(req.query.page, req.query.limit));
+exports.deleteMessage = wrap((req) => adminService.deleteMessage(req.params.id));

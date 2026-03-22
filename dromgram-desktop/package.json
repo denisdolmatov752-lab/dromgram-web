@@ -1,0 +1,31 @@
+{
+  "name": "dromgram-desktop",
+  "version": "1.0.0",
+  "description": "DRomGram Desktop",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win --x64",
+    "build-linux": "electron-builder --linux --x64"
+  },
+  "build": {
+    "appId": "ru.orproject.dromgram",
+    "productName": "DRomGram",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}
