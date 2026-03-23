@@ -4,7 +4,49 @@ const { aiLimiter } = require('../middleware/rateLimiter');
 
 router.use(authenticateJWT);
 
-// AI Chat proxy — sends request to OpenRouter, keeps API key server-side
+const SYSTEM_PROMPT = `Ты DRomGram AI — умный помощник встроенный в мессенджер DRomGram. Ты помогаешь пользователям, отвечаешь на вопросы, помогаешь составлять сообщения, переводишь текст и многое другое. Когда тебе присылают изображение — подробно описывай что на нём, отвечай на вопросы о нём. Отвечай на русском языке, если пользователь пишет по-русски. Будь дружелюбным и полезным. Ты создан командой DRomGram.`;
+
+// Vision-capable model that works on OpenRouter
+const AI_MODEL = 'google/gemini-2.0-flash-001';
+
+/**
+ * Sanitise a single message coming from the frontend.
+ * content can be:
+ *   - string  → pass through
+ *   - array   → keep only 'text' and 'image_url' parts, validate image_url urls
+ */
+function sanitiseMessage(m) {
+  if (!m || !['user', 'assistant', 'system'].includes(m.role)) return null;
+
+  if (typeof m.content === 'string') {
+    return { role: m.role, content: m.content };
+  }
+
+  if (Array.isArray(m.content)) {
+    const parts = [];
+    for (const part of m.content) {
+      if (part.type === 'text' && typeof part.text === 'string') {
+        parts.push({ type: 'text', text: part.text });
+      } else if (
+        part.type === 'image_url' &&
+        part.image_url?.url &&
+        typeof part.image_url.url === 'string'
+      ) {
+        const url = part.image_url.url;
+        // Accept base64 data URLs and https URLs
+        if (url.startsWith('data:image/') || url.startsWith('https://')) {
+          parts.push({ type: 'image_url', image_url: { url } });
+        }
+      }
+    }
+    if (parts.length === 0) return null;
+    return { role: m.role, content: parts };
+  }
+
+  return null;
+}
+
+// AI Chat proxy — keeps API key server-side, supports text + vision
 router.post('/chat', aiLimiter || ((req, res, next) => next()), async (req, res) => {
   try {
     const { messages } = req.body;
@@ -17,13 +59,21 @@ router.post('/chat', aiLimiter || ((req, res, next) => next()), async (req, res)
       return res.status(503).json({ success: false, error: 'AI service not configured' });
     }
 
-    const SYSTEM_PROMPT = `Ты DRomGram AI — умный помощник встроенный в мессенджер DRomGram. Ты помогаешь пользователям, отвечаешь на вопросы, помогаешь составлять сообщения, переводишь текст и многое другое. Отвечай на русском языке, если пользователь пишет по-русски. Будь дружелюбным и полезным. Ты создан командой DRomGram.`;
+    // Sanitise and filter messages (max last 20)
+    const sanitised = messages
+      .slice(-20)
+      .map(sanitiseMessage)
+      .filter(Boolean);
+
+    if (sanitised.length === 0) {
+      return res.status(400).json({ success: false, error: 'No valid messages provided' });
+    }
 
     const payload = {
-      model: 'google/gemini-2.0-flash-001',
+      model: AI_MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...messages.slice(-20).map(m => ({ role: m.role, content: m.content })),
+        ...sanitised,
       ],
       max_tokens: 2048,
       temperature: 0.7,
@@ -43,7 +93,12 @@ router.post('/chat', aiLimiter || ((req, res, next) => next()), async (req, res)
     if (!response.ok) {
       const errText = await response.text();
       console.error('OpenRouter error:', response.status, errText);
-      return res.status(502).json({ success: false, error: 'AI upstream error', status: response.status });
+      return res.status(502).json({
+        success: false,
+        error: 'AI upstream error',
+        status: response.status,
+        detail: errText.slice(0, 300),
+      });
     }
 
     const data = await response.json();
