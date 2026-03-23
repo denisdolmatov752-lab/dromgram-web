@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/axios';
 
+// Real NFT names from /root/orproject/orcasino/nft/ — shown in profile color editor
+const NFT_BACKGROUNDS = [
+  '1may', '2048', '3D_Glow', '3DRender', '8Ball', '8BitDiamond',
+  'Abandoned', 'Abduction', 'Abracadabra', 'Absinthe', 'Abubu',
+  'Academic', 'ACDC', 'Ace_Machine', 'Adesanya', 'Alarm',
+  'Alert_Serpent', 'Alkonost', 'All-Seeing_Eye', 'Amour_Scoops',
+];
+
 // SVG Icons
 const QRIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,9 +166,19 @@ function ColorProfileEditor({ isOpen, onClose, user }: { isOpen: boolean; onClos
           <div>
             <p className="text-sm font-medium mb-3">Фоны</p>
             <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="aspect-square rounded-lg bg-[var(--color-surface)] flex items-center justify-center text-xs text-[var(--color-text-secondary)]">
-                  NFT {i}
+              {NFT_BACKGROUNDS.map((name) => (
+                <div
+                  key={name}
+                  className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[var(--color-primary)] transition-all"
+                  onClick={() => setSelectedBg(name)}
+                  style={{ outline: selectedBg === name ? '2px solid var(--color-primary)' : 'none' }}
+                >
+                  <img
+                    src={`/nft/${name}.png`}
+                    alt={name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display='none'; }}
+                  />
                 </div>
               ))}
             </div>
@@ -170,7 +188,7 @@ function ColorProfileEditor({ isOpen, onClose, user }: { isOpen: boolean; onClos
             onClick={onClose}
             className="w-full py-3 rounded-lg bg-[var(--color-primary)] text-white font-medium"
           >
-            🔒 Применить стиль
+            Применить стиль
           </button>
         </div>
       </div>
@@ -285,6 +303,7 @@ export default function ProfilePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedBg, setSelectedBg] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGifts = async () => {
@@ -347,7 +366,7 @@ export default function ProfilePage() {
 
         {/* Music Bar */}
         <div className="mt-6 px-4 py-3 glass-sm rounded-lg w-full flex items-center gap-3">
-          <span className="text-lg">🎵</span>
+          <span className="text-lg"></span>
           <div className="flex-1 min-w-0">
             <div className="text-sm truncate">The Weeknd - Blinding Lights</div>
           </div>
@@ -376,7 +395,7 @@ export default function ProfilePage() {
       {/* Tabs */}
       <div className="flex gap-4 px-4 py-4 border-b border-[var(--color-divider)] overflow-x-auto">
         {[
-          { id: 'gifts', label: '🎁 Подарки' },
+          { id: 'gifts', label: 'Подарки' },
           { id: 'posts', label: '📝 Публикации' },
           { id: 'archive', label: '📦 Архив публикаций' },
         ].map((tab) => (

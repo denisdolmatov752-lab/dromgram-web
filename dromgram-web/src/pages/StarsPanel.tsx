@@ -180,7 +180,7 @@ function PaymentModal({ pkg, onClose, onSuccess }: any) {
 
         {/* Security Info */}
         <p className="text-white/50 text-xs text-center">
-          🔒 Ваши данные защищены и не сохраняются
+           Ваши данные защищены и не сохраняются
         </p>
       </div>
     </div>

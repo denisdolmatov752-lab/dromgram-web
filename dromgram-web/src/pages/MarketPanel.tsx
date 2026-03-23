@@ -266,14 +266,14 @@ function BuyModal({ item, onClose, onConfirm, stars }: { item: NFTItem; onClose:
         </div>
         {!canAfford && (
           <p style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>
-            Недостаточно звёзд. Нужно ещё {(item.stars - stars).toLocaleString()} ⭐
+            Недостаточно звёзд. Нужно ещё {(item.stars - stars).toLocaleString()} 
           </p>
         )}
         <button
           onClick={canAfford ? onConfirm : onClose}
           style={{ width: '100%', background: canAfford ? '#2AABEE' : 'rgba(255,255,255,0.08)', color: canAfford ? '#fff' : '#8b949e', border: 'none', borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 700, cursor: canAfford ? 'pointer' : 'default' }}
         >
-          {canAfford ? `Купить за ${item.stars.toLocaleString()} ⭐` : 'Пополнить звёзды'}
+          {canAfford ? `Купить за ${item.stars.toLocaleString()} ` : 'Пополнить звёзды'}
         </button>
       </div>
     </div>
@@ -343,7 +343,7 @@ function ListingModal({ item, onClose, userItems }: { item: NFTItem | null; onCl
                       style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#e8eaed', fontSize: 15, marginBottom: 16, boxSizing: 'border-box' }} />
                     <button onClick={handleList} disabled={loading || price < 1}
                       style={{ width: '100%', background: '#2AABEE', color: '#fff', border: 'none', borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
-                      {loading ? 'Выставляю...' : `Выставить за ${price.toLocaleString()} ⭐`}
+                      {loading ? 'Выставляю...' : `Выставить за ${price.toLocaleString()} `}
                     </button>
                   </>
                 )}
