@@ -38,7 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.phone, builder: (_, __) => const PhoneScreen()),
       GoRoute(path: RouteNames.otp, builder: (context, state) {
         final extra = state.extra as Map<String, dynamic>? ?? {};
-        return OtpScreen(phone: extra['phone'] ?? '', isNewUser: extra['isNewUser'] ?? false);
+        return OtpScreen(phone: extra['phone'] ?? '', isNewUser: extra['isNewUser'] ?? false, email: extra['email'], codeId: extra['codeId']);
       }),
       GoRoute(path: RouteNames.register, builder: (_, __) => const RegisterScreen()),
       GoRoute(path: RouteNames.qrLogin, builder: (_, __) => const QrLoginScreen()),
