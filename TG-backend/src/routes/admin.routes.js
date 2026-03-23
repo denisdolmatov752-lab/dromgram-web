@@ -7,6 +7,8 @@ router.get('/users', ctrl.getUsers);
 router.put('/users/:id/ban', ctrl.banUser);
 router.put('/users/:id/unban', ctrl.unbanUser);
 router.delete('/users/:id', ctrl.deleteUser);
+router.put('/users/:id/verified', ctrl.setVerified);
+router.put('/users/:id/stars', ctrl.addStars);
 router.get('/chats', ctrl.getChats);
 router.delete('/messages/:id', ctrl.deleteMessage);
 module.exports = router;

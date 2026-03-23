@@ -84,8 +84,20 @@ async function setPassword(userId, password, hint, recoveryEmail) {
   return prisma.user.update({ where: { id: userId }, data: { passwordHash, passwordHint: hint || null, recoveryEmail: recoveryEmail || null } });
 }
 
-async function getSessions(userId) {
-  return prisma.session.findMany({ where: { userId, isActive: true }, orderBy: { lastUsed: 'desc' } });
+async function getSessions(userId, currentSessionId) {
+  const sessions = await prisma.session.findMany({
+    where: { userId, isActive: true },
+    orderBy: { createdAt: 'desc' }
+  });
+  return sessions.map(s => ({
+    id: s.id,
+    deviceName: s.deviceName || 'Неизвестное устройство',
+    deviceOs: s.deviceOs || 'Неизвестная ОС',
+    ipAddress: s.ipAddress || '0.0.0.0',
+    createdAt: s.createdAt,
+    lastActiveAt: s.lastUsed || s.createdAt,
+    isCurrent: s.id === currentSessionId,
+  }));
 }
 
 async function revokeSession(userId, sessionId) {

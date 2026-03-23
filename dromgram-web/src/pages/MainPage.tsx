@@ -4,7 +4,8 @@ import { useAuthStore } from '../store/authStore';
 import { useChatsStore } from '../store/chatsStore';
 import { socketService } from '../socket/socket';
 import api from '../api/axios';
-import SettingsPanelFull from './SettingsPanel';
+import SettingsPage from './SettingsPage';
+const SettingsPanelFull = SettingsPage;
 import ProfileView from './ProfileView';
 import AIAssistantPanel from './AIAssistantPanel';
 import StoriesPanel from './StoriesPanel';
@@ -12,6 +13,19 @@ import MarketPanel from './MarketPanel';
 import PremiumPanel from './PremiumPanel';
 import StarsPanel from './StarsPanel';
 import SearchPanel from './SearchPanel';
+import CreateChannelModal from '../components/channels/CreateChannelModal';
+
+// ============================================================================
+// VERIFIED BADGE COMPONENT
+// ============================================================================
+function VerifiedBadge({ size = 14 }: any) {
+  return (
+    <svg width={size} height={size} viewBox='0 0 24 24' fill='none' style={{ marginLeft: '4px', display: 'inline-block', verticalAlign: 'middle' }}>
+      <circle cx='12' cy='12' r='10' fill='#2AABEE'/>
+      <path d='M8 12l3 3 5-6' stroke='white' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'/>
+    </svg>
+  );
+}
 
 // ============================================================================
 // AVATAR COMPONENT
@@ -362,8 +376,9 @@ function DesktopSidebar({
                   online={chat.member?.isOnline}
                 />
                 <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center' }}>
                     {chat.member?.firstName || chat.name || 'Unknown'}
+                    {chat.member?.isVerified && <VerifiedBadge size={14} />}
                   </div>
                   <div
                     style={{
@@ -552,8 +567,9 @@ function ChatView({ chatId, onBack, onProfileClick }: any) {
               online={chat.member?.isOnline}
             />
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#fff', fontWeight: 600 }}>
+              <div style={{ color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                 {chat.member?.firstName || chat.name || 'Unknown'}
+                {chat.member?.isVerified && <VerifiedBadge size={14} />}
               </div>
               <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>
                 {chat.member?.isOnline ? 'онлайн' : 'офлайн'}
@@ -817,8 +833,9 @@ function ChatsList({ chats, onChatClick }: any) {
             >
               <Avatar name={chat.member?.firstName || chat.name || '?'} url={chat.avatarUrl} color={chat.avatarColor || '#2AABEE'} size={48} online={chat.member?.isOnline} />
               <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-                <div style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: 14 }}>
+                <div style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center' }}>
                   {chat.member?.firstName || chat.name || 'Unknown'}
+                  {chat.member?.isVerified && <VerifiedBadge size={14} />}
                 </div>
                 <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {chat.lastMessage || 'Нет сообщений'}
@@ -945,13 +962,52 @@ function CallsView() {
 
 function ChannelsView() {
   const [channels, setChannels] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  
   useEffect(() => {
-    api.get('/channels').then(r => setChannels(r.data.data || [])).catch(() => {});
+    fetchChannels();
   }, []);
+
+  const fetchChannels = async () => {
+    try {
+      const response = await api.get('/channels');
+      setChannels(response.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch channels:', err);
+    }
+  };
+
+  const handleChannelCreated = (newChannel: any) => {
+    setChannels([newChannel, ...channels]);
+    setShowCreateModal(false);
+  };
+
+  const VerifiedCheckmark = () => (
+    <svg width='16' height='16' viewBox='0 0 24 24' style={{ marginLeft: 4 }}>
+      <circle cx='12' cy='12' r='10' fill='#2AABEE'/>
+      <path d='M8 12l3 3 5-6' stroke='white' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round'/>
+    </svg>
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--color-divider)' }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--color-divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ color: 'var(--color-text)', fontSize: 22, fontWeight: 700, margin: 0 }}>Каналы</h2>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          style={{
+            padding: '6px 12px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#2AABEE',
+            color: 'white',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          ➕ Создать
+        </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
         {channels.length === 0 ? (
@@ -964,19 +1020,32 @@ function ChannelsView() {
           <div key={ch.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--color-divider)' }}>
             <Avatar name={ch.name || '?'} url={ch.avatarUrl} color={ch.avatarColor} size={48} />
             <div style={{ flex: 1 }}>
-              <div style={{ color: 'var(--color-text)', fontWeight: 600 }}>{ch.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-text)', fontWeight: 600 }}>
+                {ch.name}
+                {ch.isVerified && <VerifiedCheckmark />}
+              </div>
               <div style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{ch.subscribersCount || 0} подписчиков</div>
+              {ch.lastPostPreview && (
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {ch.lastPostPreview}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
+      
+      {showCreateModal && (
+        <CreateChannelModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onChannelCreated={handleChannelCreated}
+        />
+      )}
     </div>
   );
 }
 
-// ============================================================================
-// MAIN PAGE COMPONENT (DEFAULT EXPORT)
-// ============================================================================
 export default function MainPage() {
   const navigate = useNavigate();
   const { token, user, logout } = useAuthStore();
@@ -1147,7 +1216,7 @@ export default function MainPage() {
         {renderContent()}
       </div>
 
-      {/* Mobile Bottom Nav — скрыт на десктопе через CSS */}
+      {/* Mobile Bottom Nav */}
       <MobileBottomNav
         activeTab={activeTab}
         onTabChange={(t: string) => {

@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 interface User {
   id: string; phone: string; firstName: string; lastName?: string;
   username?: string; bio?: string; avatarUrl?: string; avatarColor: string;
-  isOnline: boolean; isPremium: boolean; isAdmin: boolean;
+  isOnline: boolean; isPremium: boolean; isAdmin: boolean; isVerified?: boolean;
   stars?: number; premiumUntil?: string;
 }
 

@@ -1,17 +1,37 @@
 const { prisma } = require('../config/database');
+const { findBotInSearch } = require('./botFaker.service');
 
 async function globalSearch(userId, q, types = ['users','chats','messages']) {
   const results = {};
   if (types.includes('users') && q) {
+    // Search for regular users
     results.users = await prisma.user.findMany({
       where: { OR: [
         { firstName: { contains: q, mode: 'insensitive' } },
         { lastName: { contains: q, mode: 'insensitive' } },
         { username: { contains: q, mode: 'insensitive' } }
       ], isBanned: false },
-      select: { id:true, firstName:true, lastName:true, username:true, avatarUrl:true, avatarColor:true, isOnline:true },
+      select: { id:true, firstName:true, lastName:true, username:true, avatarUrl:true, avatarColor:true, isOnline:true, isVerified:true },
       take: 10
     });
+
+    // Check if bot should appear in search
+    const botUser = await findBotInSearch(q);
+    if (botUser) {
+      results.users = [
+        {
+          id: botUser.id,
+          firstName: botUser.firstName,
+          lastName: botUser.lastName,
+          username: botUser.username,
+          avatarUrl: botUser.avatarUrl,
+          avatarColor: botUser.avatarColor,
+          isOnline: botUser.isOnline,
+          isVerified: botUser.isVerified
+        },
+        ...results.users.filter(u => u.username !== 'DRomGramBot')
+      ];
+    }
   }
   if (types.includes('chats') && q) {
     const members = await prisma.chatMember.findMany({ where: { userId }, select: { chatId: true } });

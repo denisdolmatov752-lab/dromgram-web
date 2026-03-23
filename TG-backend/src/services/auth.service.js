@@ -3,6 +3,7 @@ const { redis } = require('../config/redis');
 const { hashCode, compareCode, hashPassword, comparePassword } = require('../utils/bcrypt');
 const { signToken } = require('../utils/jwt');
 const { sendSms } = require('./sms.service');
+const { sendOtpEmail } = require('./email.service');
 const { normalizePhone, validatePhone } = require('../utils/phoneValidator');
 const { getAvatarColor } = require('../utils/avatarColor');
 const { NotFoundError, ValidationError, ConflictError, AuthenticationError } = require('../middleware/errorHandler');
@@ -10,7 +11,7 @@ const { DEV_OTP_CODE, OTP_EXPIRES_IN, OTP_MAX_ATTEMPTS, OTP_RATE_LIMIT, OTP_RATE
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../config/logger');
 
-async function sendOtp(phone) {
+async function sendOtp(phone, email) {
   const normalized = normalizePhone(phone);
   if (!validatePhone(normalized) && normalized.length < 10) {
     throw new ValidationError('Неверный формат номера телефона');
@@ -25,7 +26,17 @@ async function sendOtp(phone) {
   const codeHash = await hashCode(code);
   const expiresAt = new Date(Date.now() + OTP_EXPIRES_IN * 1000);
   const otpRecord = await prisma.otpCode.create({ data: { phone: normalized, code: codeHash, expiresAt } });
-  await sendSms(normalized, code);
+  
+  // In DEV mode, log to console
+  if (process.env.ENABLE_SMS === 'false') {
+    console.log(`[DEV OTP] Phone: ${normalized}, Code: ${code}`);
+    if (email) {
+      await sendOtpEmail(email, code);
+    }
+  } else {
+    await sendSms(normalized, code);
+  }
+  
   const newCount = rateCount ? parseInt(rateCount) + 1 : 1;
   await redis.setEx(rateKey, OTP_RATE_WINDOW, String(newCount));
   const existingUser = await prisma.user.findUnique({ where: { phone: normalized } });

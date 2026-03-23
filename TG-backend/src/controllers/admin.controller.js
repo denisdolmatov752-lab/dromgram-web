@@ -7,3 +7,5 @@ exports.deleteUser = wrap(async (req) => { await adminService.deleteUser(req.par
 exports.getStats = wrap(() => adminService.getStats());
 exports.getChats = wrap((req) => adminService.getChats(req.query.page, req.query.limit));
 exports.deleteMessage = wrap((req) => adminService.deleteMessage(req.params.id));
+exports.setVerified = wrap((req) => adminService.setVerified(req.params.id, req.body.isVerified));
+exports.addStars = wrap((req) => adminService.addStars(req.params.id, req.body.stars));

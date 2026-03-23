@@ -3,11 +3,11 @@ import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 
 interface StarPackage {
-  id: string;
   stars: number;
   price: number;
   currency: string;
-  savings?: number;
+  bonus: string | null;
+  popular?: boolean;
 }
 
 interface Transaction {
@@ -19,291 +19,38 @@ interface Transaction {
   icon: string;
 }
 
-const STAR_PACKAGES: StarPackage[] = [
-  { id: '50', stars: 50, price: 99, currency: '₽' },
-  { id: '100', stars: 100, price: 179, currency: '₽' },
-  { id: '250', stars: 250, price: 399, currency: '₽' },
-  { id: '500', stars: 500, price: 749, currency: '₽' },
-  { id: '1000', stars: 1000, price: 1299, currency: '₽' },
-  { id: '2500', stars: 2500, price: 2999, currency: '₽' },
+const PACKAGES: StarPackage[] = [
+  { stars: 50, price: 99, currency: '₽', bonus: null },
+  { stars: 100, price: 179, currency: '₽', bonus: null },
+  { stars: 250, price: 399, currency: '₽', bonus: null },
+  { stars: 500, price: 749, currency: '₽', bonus: '+10%' },
+  { stars: 1000, price: 1299, currency: '₽', bonus: '+20%' },
+  { stars: 2500, price: 2999, currency: '₽', bonus: '+25%', popular: true },
+  { stars: 5000, price: 5499, currency: '₽', bonus: '+35%' },
 ];
 
-export default function StarsPanel() {
-  const { user, updateUser } = useAuthStore();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+const StarIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox='0 0 24 24' fill='#FFD700'>
+    <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/>
+  </svg>
+);
 
-  const stars = user?.stars || 0;
-
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/stars/history');
-      setTransactions(response.data.transactions || []);
-    } catch (err) {
-      console.error('Failed to fetch transaction history:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectPackage = (packageId: string) => {
-    setSelectedPackage(packageId);
-    setShowPaymentModal(true);
-  };
-
-  const handlePurchaseComplete = (amount: number) => {
-    const newStars = stars + amount;
-    updateUser({ stars: newStars });
-    setSuccessMessage(`✅ +${amount}⭐ звёзд добавлено в ваш баланс!`);
-    setTimeout(() => {
-      setSuccessMessage(null);
-      setShowPaymentModal(false);
-      setSelectedPackage(null);
-    }, 2000);
-    fetchTransactions();
-  };
-
-  return (
-    <div className="panel-container bg-gradient-to-b from-slate-900 to-slate-950 overflow-y-auto">
-      {/* Header */}
-      <div className="glass-header sticky top-0 z-40 p-4">
-        <h1 className="text-xl font-bold text-white">⭐ Звёзды DRomGram</h1>
-      </div>
-
-      <div className="space-y-6 p-4">
-        {/* Balance Card */}
-        <div className="glass glass-strong rounded-lg p-6 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="text-5xl">⭐</div>
-            <div>
-              <p className="text-white/70 text-sm">Ваш баланс</p>
-              <p className="text-white text-4xl font-bold">{stars}</p>
-            </div>
-          </div>
-          <p className="text-center text-white/60 text-sm">
-            Используйте звёзды для подарков, подписок и поддержки авторов
-          </p>
-        </div>
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="glass glass-sm p-4 rounded-lg text-center text-white text-sm border border-green-500/30 bg-green-500/10">
-            {successMessage}
-          </div>
-        )}
-
-        {/* Buy Stars Section */}
-        <div>
-          <h2 className="text-white font-semibold mb-4">Купить звёзды</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {STAR_PACKAGES.map((pkg) => (
-              <button
-                key={pkg.id}
-                onClick={() => handleSelectPackage(pkg.id)}
-                className="glass glass-sm rounded-lg p-4 hover:bg-white/10 transition-all group"
-              >
-                <div className="text-3xl mb-2 text-center group-hover:scale-110 transition-transform">
-                  ⭐
-                </div>
-                <p className="text-white font-bold text-lg text-center">{pkg.stars}</p>
-                <p className="text-white/70 text-center mt-1 text-sm">
-                  {pkg.price}
-                  <span className="text-xs ml-0.5">{pkg.currency}</span>
-                </p>
-                {pkg.savings && (
-                  <div className="mt-2 text-center text-xs text-green-300 font-semibold">
-                    -{pkg.savings}%
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* How to Use */}
-        <div>
-          <h2 className="text-white font-semibold mb-4">Как использовать звёзды</h2>
-          <div className="space-y-3">
-            <HowToUseItem
-              icon="🎁"
-              title="Покупать подарки"
-              desc="Дарите эксклюзивные NFT-подарки своим друзьям"
-            />
-            <HowToUseItem
-              icon="⭐"
-              title="Premium подписка"
-              desc="Оформите подписку на DRomGram Premium"
-            />
-            <HowToUseItem
-              icon="👍"
-              title="Поддержать авторов"
-              desc="Отправляйте звёзды создателям контента"
-            />
-          </div>
-        </div>
-
-        {/* Ways to Earn */}
-        <div>
-          <h2 className="text-white font-semibold mb-4">Получайте звёзды</h2>
-          <div className="space-y-3">
-            <EarnWayItem
-              icon="🎁"
-              title="Получайте подарки от друзей"
-              desc="Когда друзья дарят вам подарки, вы получаете звёзды"
-            />
-            <EarnWayItem
-              icon="📤"
-              title="Приглашайте друзей"
-              desc="Получите +50⭐ за каждого друга, который присоединится"
-            />
-            <EarnWayItem
-              icon="🏆"
-              title="Участвуйте в акциях"
-              desc="Выигрывайте звёзды в еженедельных конкурсах"
-            />
-          </div>
-        </div>
-
-        {/* Transaction History */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-semibold">История транзакций</h2>
-            {loading && <div className="spinner w-4 h-4"></div>}
-          </div>
-
-          {transactions.length === 0 ? (
-            <div className="glass glass-sm p-8 rounded-lg text-center text-white/50">
-              <p className="text-3xl mb-2">📜</p>
-              <p className="text-sm">Пока нет транзакций</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {transactions.map((tx) => (
-                <TransactionItem key={tx.id} transaction={tx} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="glass glass-sm p-4 rounded-lg text-white/70 text-xs space-y-2">
-          <p>💡 Звёзды — виртуальная валюта DRomGram</p>
-          <p>🔄 Обменять звёзды на деньги нельзя</p>
-          <p>⏰ Минимальная покупка: 50⭐</p>
-        </div>
-      </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && selectedPackage && (
-        <PaymentModal
-          package={STAR_PACKAGES.find((p) => p.id === selectedPackage)!}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedPackage(null);
-          }}
-          onSuccess={(amount) => handlePurchaseComplete(amount)}
-        />
-      )}
-    </div>
-  );
-}
-
-interface HowToUseItemProps {
-  icon: string;
-  title: string;
-  desc: string;
-}
-
-function HowToUseItem({ icon, title, desc }: HowToUseItemProps) {
-  return (
-    <div className="glass glass-sm rounded-lg p-3 flex gap-3">
-      <span className="text-2xl flex-shrink-0">{icon}</span>
-      <div>
-        <p className="text-white text-sm font-semibold">{title}</p>
-        <p className="text-white/60 text-xs">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-interface EarnWayItemProps {
-  icon: string;
-  title: string;
-  desc: string;
-}
-
-function EarnWayItem({ icon, title, desc }: EarnWayItemProps) {
-  return (
-    <div className="glass glass-sm rounded-lg p-3 flex gap-3 hover:bg-white/10 transition-colors cursor-pointer">
-      <span className="text-2xl flex-shrink-0">{icon}</span>
-      <div>
-        <p className="text-white text-sm font-semibold">{title}</p>
-        <p className="text-white/60 text-xs">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-interface TransactionItemProps {
-  transaction: Transaction;
-}
-
-function TransactionItem({ transaction }: TransactionItemProps) {
-  const isEarned = transaction.type === 'earned' || transaction.type === 'gift';
-
-  return (
-    <div className="glass glass-sm rounded-lg p-3 flex items-center justify-between group hover:bg-white/5 transition-colors">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{transaction.icon}</span>
-        <div>
-          <p className="text-white text-sm font-medium">{transaction.description}</p>
-          <p className="text-white/50 text-xs">
-            {new Date(transaction.timestamp).toLocaleDateString('ru-RU')}
-          </p>
-        </div>
-      </div>
-      <div
-        className={`text-sm font-bold ${
-          isEarned ? 'text-green-400' : 'text-orange-400'
-        }`}
-      >
-        {isEarned ? '+' : '-'}
-        {transaction.amount}⭐
-      </div>
-    </div>
-  );
-}
-
-interface PaymentModalProps {
-  package: StarPackage;
-  onClose: () => void;
-  onSuccess: (stars: number) => void;
-}
-
-function PaymentModal({ package: pkg, onClose, onSuccess }: PaymentModalProps) {
+function PaymentModal({ pkg, onClose, onSuccess }: any) {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 16) value = value.slice(0, 16);
-    value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-    setCardNumber(value);
+    let value = e.target.value.replace(/\s/g, '');
+    if (!/^\d*$/.test(value)) return;
+    value = value.slice(0, 16);
+    setCardNumber(value.replace(/(\d{4})/g, '$1 ').trim());
   };
 
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 4) value = value.slice(0, 4);
+    if (value.length > 4) return;
     if (value.length >= 2) {
       value = value.slice(0, 2) + '/' + value.slice(2);
     }
@@ -311,36 +58,35 @@ function PaymentModal({ package: pkg, onClose, onSuccess }: PaymentModalProps) {
   };
 
   const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 3) value = value.slice(0, 3);
+    const value = e.target.value.replace(/\D/g, '').slice(0, 3);
     setCvv(value);
   };
 
-  const handlePayment = async () => {
-    try {
-      setLoading(true);
-      const response = await api.post('/stars/purchase', {
-        package: pkg.id,
-        amount: pkg.price,
-        cardLast4: cardNumber.replace(/\s/g, '').slice(-4),
-      });
+  const isValid = cardNumber.replace(/\s/g, '').length === 16 && expiry.length === 5 && cvv.length === 3;
 
-      if (response.data.success) {
-        onSuccess(pkg.stars);
-      }
+  const handlePayment = async () => {
+    if (!isValid) return;
+    setLoading(true);
+    try {
+      await api.post('/stars/purchase', {
+        stars: pkg.stars,
+        price: pkg.price,
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        expiry,
+        cvv
+      });
+      onSuccess(pkg.stars);
     } catch (err) {
-      console.error('Payment error:', err);
-      alert('Ошибка при обработке платежа');
+      console.error('Payment failed:', err);
+      alert('Ошибка платежа. Попробуйте снова.');
     } finally {
       setLoading(false);
     }
   };
 
-  const isValid = cardNumber.length === 19 && expiry.length === 5 && cvv.length === 3;
-
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center p-4">
-      <div className="glass glass-strong rounded-lg w-full max-w-md p-6 space-y-4">
+      <div className="glass glass-strong rounded-2xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-white font-bold text-lg">Купить звёзды</h2>
           <button
@@ -353,7 +99,9 @@ function PaymentModal({ package: pkg, onClose, onSuccess }: PaymentModalProps) {
 
         {/* Package Info */}
         <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg p-4 text-center">
-          <div className="text-4xl mb-2">⭐</div>
+          <div className="flex justify-center mb-2">
+            <StarIcon size={32} />
+          </div>
           <p className="text-white text-2xl font-bold">{pkg.stars} звёзд</p>
           <p className="text-white/70 text-sm mt-1">
             {pkg.price}
@@ -435,6 +183,177 @@ function PaymentModal({ package: pkg, onClose, onSuccess }: PaymentModalProps) {
           🔒 Ваши данные защищены и не сохраняются
         </p>
       </div>
+    </div>
+  );
+}
+
+export default function StarsPanel() {
+  const { user, updateUser } = useAuthStore();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPackage, setSelectedPackage] = useState<StarPackage | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const stars = user?.stars || 0;
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/stars/history');
+      setTransactions(response.data.transactions || []);
+    } catch (err) {
+      console.error('Failed to fetch transaction history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectPackage = (pkg: StarPackage) => {
+    setSelectedPackage(pkg);
+    setShowPaymentModal(true);
+  };
+
+  const handlePurchaseComplete = (amount: number) => {
+    const newStars = stars + amount;
+    updateUser({ stars: newStars });
+    setSuccessMessage(`✅ +${amount} звёзд добавлено в ваш баланс!`);
+    setTimeout(() => {
+      setSuccessMessage(null);
+      setShowPaymentModal(false);
+      setSelectedPackage(null);
+    }, 2000);
+    fetchTransactions();
+  };
+
+  return (
+    <div className="panel-container bg-gradient-to-b from-slate-900 to-slate-950 overflow-y-auto">
+      {/* Header */}
+      <div className="glass-header sticky top-0 z-40 p-4">
+        <div className="flex items-center gap-3">
+          <StarIcon size={24} />
+          <h1 className="text-xl font-bold text-white">Звёзды DRomGram</h1>
+        </div>
+      </div>
+
+      <div className="space-y-6 p-4 pb-20">
+        {/* Balance Card */}
+        <div className="glass glass-strong rounded-2xl p-6 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <StarIcon size={48} />
+            </div>
+            <div>
+              <p className="text-white/70 text-sm">Ваши звёзды DRomGram</p>
+              <p className="text-white text-4xl font-bold">{stars.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="glass glass-sm p-4 rounded-2xl text-center text-white text-sm border border-green-500/30 bg-green-500/10">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Star Packages Grid */}
+        <div>
+          <h2 className="text-white font-semibold mb-4 px-2">Купить звёзды</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {PACKAGES.map((pkg) => (
+              <button
+                key={`${pkg.stars}-${pkg.price}`}
+                onClick={() => handleSelectPackage(pkg)}
+                className="relative group rounded-2xl p-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all duration-200 text-left min-h-[90px] flex flex-col justify-between"
+              >
+                {/* Popular Badge */}
+                {pkg.popular && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    ХИТ
+                  </div>
+                )}
+
+                {/* Star Icon */}
+                <div className="flex items-center gap-2 mb-2">
+                  <StarIcon size={20} />
+                </div>
+
+                {/* Stars Count */}
+                <div className="mb-2">
+                  <p className="text-white font-bold text-lg">{pkg.stars}</p>
+                  <p className="text-white/50 text-xs">звёзд</p>
+                </div>
+
+                {/* Price & Bonus */}
+                <div className="flex items-center justify-between">
+                  <p className="text-white font-semibold text-sm">
+                    {pkg.price}{pkg.currency}
+                  </p>
+                  {pkg.bonus && (
+                    <span className="bg-green-500/30 border border-green-500/60 text-green-300 text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {pkg.bonus}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Transaction History */}
+        <div>
+          <h2 className="text-white font-semibold mb-4 px-2">История операций</h2>
+          {loading ? (
+            <div className="text-center text-white/60 py-8">Загрузка...</div>
+          ) : transactions.length === 0 ? (
+            <div className="glass glass-sm rounded-2xl p-8 text-center text-white/60">
+              <p className="text-sm">Нет операций</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="glass glass-sm rounded-xl p-4 flex items-center justify-between border border-white/10 hover:border-white/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-lg">
+                      {tx.icon}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">{tx.description}</p>
+                      <p className="text-white/50 text-xs">
+                        {new Date(tx.timestamp).toLocaleString('ru-RU')}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-white font-semibold text-sm">
+                    {tx.type === 'purchase' || tx.type === 'earned' ? '+' : '-'}
+                    {tx.amount}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedPackage && (
+        <PaymentModal
+          pkg={selectedPackage}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedPackage(null);
+          }}
+          onSuccess={handlePurchaseComplete}
+        />
+      )}
     </div>
   );
 }

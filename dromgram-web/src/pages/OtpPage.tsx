@@ -32,15 +32,20 @@ export default function OtpPage() {
   };
 
   const verify = async (c: string) => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
       const res = await api.post('/auth/verify-code', { phone, code: c, deviceName: 'Web Browser', deviceOs: navigator.userAgent });
       setToken(res.data.data.token);
       setUser(res.data.data.user);
-      if (res.data.data.isNewUser) navigate('/auth/register');
-      else navigate('/');
-    } catch {
-      setError('Неверный код. Попробуйте снова.');
+      // Redirect based on isNewUser flag from response
+      if (res.data.data.isNewUser === true) {
+        navigate('/auth/register');
+      } else {
+        navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Неверный код. Попробуйте снова.');
       setDigits(['', '', '', '', '']);
       refs[0].current?.focus();
       setLoading(false);

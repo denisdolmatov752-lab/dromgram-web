@@ -61,7 +61,7 @@ async function setPassword(req, res, next) {
 
 async function getSessions(req, res, next) {
   try {
-    const sessions = await usersService.getSessions(req.user.id);
+    const sessions = await usersService.getSessions(req.user.id, req.user.sessionId);
     res.json({ success: true, data: sessions });
   } catch (err) { next(err); }
 }

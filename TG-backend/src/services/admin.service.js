@@ -54,4 +54,12 @@ async function deleteMessage(messageId) {
   return prisma.message.update({ where: { id: messageId }, data: { isDeleted: true, deletedForAll: true, text: null, mediaUrl: null } });
 }
 
-module.exports = { getUsers, banUser, unbanUser, deleteUser, getStats, getChats, deleteMessage };
+async function setVerified(userId, isVerified) {
+  return prisma.user.update({ where: { id: userId }, data: { isVerified: !!isVerified } });
+}
+
+async function addStars(userId, stars) {
+  return prisma.user.update({ where: { id: userId }, data: { stars: { increment: parseInt(stars) || 0 } } });
+}
+
+module.exports = { getUsers, banUser, unbanUser, deleteUser, getStats, getChats, deleteMessage, setVerified, addStars };
