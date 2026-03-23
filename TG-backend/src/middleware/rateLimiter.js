@@ -22,4 +22,10 @@ const uploadLimiter = rateLimit({
   message: { success: false, error: 'Слишком много загрузок', code: 'UPLOAD_RATE_LIMIT' }
 });
 
-module.exports = { globalLimiter, authLimiter, uploadLimiter };
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { success: false, error: 'Слишком много запросов к AI', code: 'AI_RATE_LIMIT' }
+});
+
+module.exports = { globalLimiter, authLimiter, uploadLimiter, aiLimiter };

@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuthStore } from '../store/authStore';
-
-const OPENROUTER_API_KEY = 'OPENROUTER_API_KEY_PLACEHOLDER';
-const AI_MODEL = 'google/gemini-2.0-flash-001';
-const SYSTEM_PROMPT = `Ты DRomGram AI — умный помощник встроенный в мессенджер DRomGram. Ты помогаешь пользователям, отвечаешь на вопросы, помогаешь составлять сообщения, переводишь текст и многое другое. Отвечай на русском языке, если пользователь пишет по-русски. Будь дружелюбным и полезным. Ты созданн командой DRomGram.`;
+import api from '../api/axios';
 
 interface AIMessage {
   id: string;
@@ -23,28 +19,13 @@ const QUICK_PROMPTS = [
 ];
 
 async function sendToAI(history: AIMessage[], userMsg: string): Promise<string> {
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://orproject.ru',
-      'X-Title': 'DRomGram AI'
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...history.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userMsg }
-      ],
-      max_tokens: 2048,
-      temperature: 0.7
-    })
-  });
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
-  const data = await response.json();
-  return data.choices[0].message.content;
+  const messages = [
+    ...history.map(m => ({ role: m.role, content: m.content })),
+    { role: 'user' as const, content: userMsg },
+  ];
+  const res = await api.post('/ai/chat', { messages });
+  if (!res.data.success) throw new Error(res.data.error || 'AI error');
+  return res.data.data.content;
 }
 
 export default function AIAssistantPanel() {
@@ -54,18 +35,18 @@ export default function AIAssistantPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const handleSend = async (text?: string) => {
+    const msg = (text || input).trim();
+    if (!msg || loading) return;
 
     const userMsg: AIMessage = {
       id: `msg-${Date.now()}-user`,
       role: 'user',
-      content: input,
-      timestamp: new Date()
+      content: msg,
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -73,21 +54,23 @@ export default function AIAssistantPanel() {
     setLoading(true);
 
     try {
-      const reply = await sendToAI([...messages, userMsg], input);
+      const reply = await sendToAI([...messages, userMsg], msg);
       const aiMsg: AIMessage = {
         id: `msg-${Date.now()}-ai`,
         role: 'assistant',
         content: reply,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
+    } catch (err: any) {
       const errorMsg: AIMessage = {
         id: `msg-${Date.now()}-error`,
         role: 'assistant',
-        content: 'Ошибка соединения с AI. Проверьте интернет.',
+        content: err?.response?.data?.error === 'AI service not configured'
+          ? 'AI сервис временно недоступен. Обратитесь к администратору.'
+          : 'Ошибка соединения с AI. Проверьте интернет и повторите.',
         timestamp: new Date(),
-        error: true
+        error: true,
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -95,83 +78,65 @@ export default function AIAssistantPanel() {
     }
   };
 
-  const clearHistory = () => {
-    setMessages([]);
-  };
+  const clearHistory = () => setMessages([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 to-slate-900">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--color-bg)' }}>
       {/* Header */}
-      <div className="glass-header flex items-center gap-3 px-4 py-3">
-        <div
-          className="rounded-full flex items-center justify-center text-white text-lg flex-shrink-0"
-          style={{ width: 40, height: 40, background: 'linear-gradient(135deg,#8b5cf6,#6366f1)' }}
-        >
-          ✦
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold truncate">DRomGram AI</div>
-          <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
-            Powered by Gemini 2.0 Flash
-          </div>
+      <div className="glass-header" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+          background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: 18, fontWeight: 700,
+          boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
+        }}>✦</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: 15 }}>DRomGram AI</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Gemini 2.0 Flash</div>
         </div>
         {messages.length > 0 && (
-          <button
-            onClick={clearHistory}
-            className="glass-btn p-2 rounded-xl flex-shrink-0 hover:bg-white/10 transition-colors"
-            title="Очистить историю"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="3,6 5,6 21,6" />
-              <path d="M19,6l-1,14H6L5,6" />
-              <path d="M10,11v6M14,11v6" />
-              <path d="M9,6V4h6v2" />
-            </svg>
+          <button onClick={clearHistory} title="Очистить историю"
+            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: 12 }}>
+            Очистить
           </button>
         )}
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 8 }}>
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-6 p-6">
-            <div
-              className="rounded-full flex items-center justify-center text-white text-5xl"
-              style={{
-                width: 100,
-                height: 100,
-                background: 'linear-gradient(135deg,#8b5cf6,#6366f1)',
-                animation: 'float 3s ease-in-out infinite'
-              }}
-            >
-              ✦
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: '0 16px' }}>
+            <div style={{
+              width: 88, height: 88, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 40, color: '#fff',
+              boxShadow: '0 8px 32px rgba(139,92,246,0.4)',
+              animation: 'float 3s ease-in-out infinite',
+            }}>✦</div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'var(--color-text)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>DRomGram AI</h2>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>Ваш умный помощник. Спросите что угодно!</p>
             </div>
-            <div className="text-center">
-              <h2 className="text-xl font-bold mb-2">DRomGram AI</h2>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                Ваш умный помощник. Спросите что угодно!
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%', maxWidth: 340 }}>
               {QUICK_PROMPTS.map(p => (
-                <button
-                  key={p.text}
-                  onClick={() => setInput(p.text)}
-                  className="glass-btn p-3 rounded-2xl text-left hover:bg-white/10 transition-colors"
-                >
-                  <div className="text-xl mb-1">{p.icon}</div>
-                  <div className="text-sm font-medium line-clamp-2">{p.text}</div>
+                <button key={p.text} onClick={() => handleSend(p.text)}
+                  className="glass-btn"
+                  style={{ padding: '12px', textAlign: 'left', cursor: 'pointer', borderRadius: 14, border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--color-text)' }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>{p.icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}>{p.text}</div>
                 </button>
               ))}
             </div>
@@ -179,40 +144,50 @@ export default function AIAssistantPanel() {
         ) : (
           <>
             {messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                    msg.role === 'user'
-                      ? 'bubble-out bg-blue-600 text-white'
-                      : msg.error
-                      ? 'ai-bubble bg-red-900/20 text-red-400'
-                      : 'ai-bubble bg-slate-800 text-white'
-                  }`}
-                >
-                  <p className="text-sm break-words whitespace-pre-wrap">{msg.content}</p>
-                  <div className={`text-xs mt-1.5 ${msg.role === 'user' ? 'text-blue-100' : 'text-slate-400'}`}>
-                    {formatTime(msg.timestamp)}
-                  </div>
+              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                {msg.role === 'assistant' && (
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0, marginRight: 8, alignSelf: 'flex-end',
+                    background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12,
+                  }}>✦</div>
+                )}
+                <div style={{
+                  maxWidth: '78%',
+                  padding: '10px 14px',
+                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  background: msg.role === 'user'
+                    ? 'linear-gradient(135deg, #2AABEE, #1A8AC4)'
+                    : msg.error
+                    ? 'rgba(255,59,48,0.15)'
+                    : 'var(--glass-bg-strong)',
+                  border: msg.role === 'user' ? 'none' : '1px solid var(--glass-border)',
+                  boxShadow: msg.role === 'user' ? '0 4px 12px rgba(42,171,238,0.3)' : 'var(--glass-shadow-sm)',
+                  color: msg.role === 'user' ? '#fff' : msg.error ? '#FF3B30' : 'var(--color-text)',
+                }}>
+                  <p style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{msg.content}</p>
+                  <div style={{ fontSize: 11, marginTop: 4, opacity: 0.7, textAlign: 'right' }}>{formatTime(msg.timestamp)}</div>
                 </div>
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
-                <div className="ai-bubble bg-slate-800 px-4 py-3 rounded-2xl">
-                  <div className="flex gap-1">
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '0s' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '0.2s' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '0.4s' }}
-                    />
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12,
+                }}>✦</div>
+                <div style={{
+                  padding: '12px 16px', borderRadius: '18px 18px 18px 4px',
+                  background: 'var(--glass-bg-strong)', border: '1px solid var(--glass-border)',
+                  display: 'flex', gap: 4, alignItems: 'center',
+                }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: 7, height: 7, borderRadius: '50%', background: '#8b5cf6',
+                      animation: 'typing-dot 1.4s infinite', animationDelay: `${i * 0.2}s`,
+                    }} />
+                  ))}
                 </div>
               </div>
             )}
@@ -221,30 +196,43 @@ export default function AIAssistantPanel() {
         )}
       </div>
 
-      {/* Input Bar */}
-      <div className="glass-header px-4 py-3">
-        <div className="flex items-end gap-3">
-          <div className="input-glass flex-1 flex items-end px-4 py-2 rounded-2xl">
+      {/* Input */}
+      <div className="glass-header" style={{ padding: '12px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'flex-end', gap: 8,
+            background: 'var(--glass-bg-strong)', border: '1px solid var(--glass-border)',
+            borderRadius: 20, padding: '10px 14px',
+          }}>
             <textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
               }}
               placeholder="Спросите что угодно..."
-              className="flex-1 bg-transparent resize-none outline-none text-sm"
               rows={1}
-              style={{ maxHeight: 120, overflowY: 'auto' }}
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                color: 'var(--color-text)', fontSize: 14, resize: 'none', lineHeight: 1.5,
+                minHeight: 22, maxHeight: 120, overflow: 'auto',
+                fontFamily: 'inherit',
+              }}
             />
           </div>
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || loading}
-            className="btn-primary w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-opacity"
+            className="btn-primary"
+            style={{
+              width: 42, height: 42, borderRadius: '50%', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+              flexShrink: 0, opacity: input.trim() && !loading ? 1 : 0.5,
+              background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
+            }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
               <path d="M2 21L23 12 2 3v7l15 2-15 2v7z" />
@@ -257,6 +245,10 @@ export default function AIAssistantPanel() {
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
+        }
+        @keyframes typing-dot {
+          0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-4px); }
         }
       `}</style>
     </div>

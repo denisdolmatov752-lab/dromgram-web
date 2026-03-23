@@ -64,6 +64,7 @@ app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/gifts', require('./routes/gifts.routes'));
 app.use('/api/stars', require('./routes/stars.routes'));
 app.use('/api/premium', require('./routes/premium.routes'));
+app.use('/api/ai', require('./routes/ai.routes'));
 
 // 404
 app.use((req, res) => {
