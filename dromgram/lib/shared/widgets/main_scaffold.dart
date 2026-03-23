@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/router/route_names.dart';
 
 class MainScaffold extends StatelessWidget {
   final Widget child;
@@ -13,8 +14,9 @@ class MainScaffold extends StatelessWidget {
     if (loc.startsWith('/contacts')) return 0;
     if (loc.startsWith('/calls')) return 1;
     if (loc.startsWith('/chats')) return 2;
-    if (loc.startsWith('/channels')) return 3;
-    if (loc.startsWith('/settings')) return 4;
+    if (loc.startsWith('/ai')) return 3;
+    if (loc.startsWith('/channels')) return 4;
+    if (loc.startsWith('/settings')) return 5;
     return 2;
   }
 
@@ -24,8 +26,9 @@ class MainScaffold extends StatelessWidget {
       case 0: context.go('/contacts'); break;
       case 1: context.go('/calls'); break;
       case 2: context.go('/chats'); break;
-      case 3: context.go('/channels'); break;
-      case 4: context.go('/settings'); break;
+      case 3: context.go(RouteNames.aiAssistant); break;
+      case 4: context.go('/channels'); break;
+      case 5: context.go('/settings'); break;
     }
   }
 
@@ -63,6 +66,7 @@ class _LiquidGlassNavBar extends StatelessWidget {
       _NavItem(Icons.people_outline, Icons.people, 'Контакты'),
       _NavItem(Icons.phone_outlined, Icons.phone, 'Звонки'),
       _NavItem(Icons.chat_bubble_outline, Icons.chat_bubble, 'Чаты'),
+      _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'AI'),
       _NavItem(Icons.campaign_outlined, Icons.campaign, 'Каналы'),
       _NavItem(Icons.settings_outlined, Icons.settings, 'Настройки'),
     ];

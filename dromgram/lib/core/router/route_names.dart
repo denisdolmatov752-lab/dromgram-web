@@ -26,6 +26,8 @@ class RouteNames {
   static const stars = '/stars';
   static const blockedUsers = '/settings/blocked';
 
+  static const aiAssistant = '/ai';
+
   static String chatRoute(String id) => '/chat/$id';
   static String profileRoute(String id) => '/profile/$id';
 }

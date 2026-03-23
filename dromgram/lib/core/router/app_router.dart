@@ -26,6 +26,7 @@ import '../../features/gifts/presentation/gifts_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/premium/presentation/stars_screen.dart';
 import '../../features/settings/presentation/blocked_users_screen.dart';
+import '../../features/ai/presentation/ai_assistant_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import 'route_names.dart';
 
@@ -49,6 +50,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: RouteNames.calls, builder: (_, __) => const CallsScreen()),
           GoRoute(path: RouteNames.channels, builder: (_, __) => const ChannelsScreen()),
           GoRoute(path: RouteNames.settings, builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: RouteNames.aiAssistant, builder: (_, __) => const AiAssistantScreen()),
         ],
       ),
       GoRoute(path: RouteNames.chat, builder: (context, state) {

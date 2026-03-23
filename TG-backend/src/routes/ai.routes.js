@@ -55,7 +55,7 @@ router.post('/chat', aiLimiter || ((req, res, next) => next()), async (req, res)
     }
 
     const apiKey = process.env.OPENROUTER_KEY;
-    if (!apiKey || apiKey === 'sk-or-v1-placeholder') {
+    if (!apiKey || apiKey.includes('placeholder') || apiKey.length < 20) {
       return res.status(503).json({ success: false, error: 'AI service not configured' });
     }
 
