@@ -2,9 +2,9 @@ const authService = require('../services/auth.service');
 
 async function sendCode(req, res, next) {
   try {
-    const { phone } = req.body;
+    const { phone, email } = req.body;
     if (!phone) return res.status(400).json({ success: false, error: 'Номер телефона обязателен' });
-    const result = await authService.sendOtp(phone);
+    const result = await authService.sendOtp(phone, email);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 }

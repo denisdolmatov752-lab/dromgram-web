@@ -388,13 +388,13 @@ export default function SettingsPanel({ onTabChange }: { onTabChange?: (tab: str
 
   // Sections list
   const sections = [
-    { id: 'account', label: 'Аккаунт', icon: '👤', color: '#0098EA' },
-    { id: 'chats', label: 'Настройки чатов', icon: '💬', color: '#F7931A' },
-    { id: 'privacy', label: 'Конфиденциальность', icon: '🔒', color: '#4FAB83' },
-    { id: 'notifications', label: 'Уведомления', icon: '🔔', color: '#FF3B30' },
-    { id: 'storage', label: 'Данные и память', icon: '💾', color: '#2AABEE' },
-    { id: 'devices', label: 'Устройства', icon: '💻', color: '#17B890' },
-    { id: 'language', label: 'Язык', icon: '🌐', color: '#7B68EE' },
+    { id: 'account', label: 'Аккаунт', subtitle: 'Номер, имя, «О себе»', iconPath: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', color: '#2AABEE' },
+    { id: 'chats', label: 'Настройки чатов', subtitle: 'Обои, ночной режим, анимации', iconPath: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', color: '#F7931A' },
+    { id: 'privacy', label: 'Конфиденциальность', subtitle: 'Время захода, устройства, ключи', iconPath: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', color: '#4CAF50' },
+    { id: 'notifications', label: 'Уведомления', subtitle: 'Звуки, звонки, счётчик сообщений', iconPath: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0', color: '#FF3B30' },
+    { id: 'storage', label: 'Данные и память', subtitle: 'Настройки загрузки медиафайлов', iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3', color: '#2AABEE' },
+    { id: 'devices', label: 'Устройства', subtitle: 'Управление активными сеансами', iconPath: 'M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1 2H3l1-2', color: '#17B890' },
+    { id: 'language', label: 'Язык', subtitle: 'Русский', iconPath: 'M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zM9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M9 12h6', color: '#7B68EE' },
   ];
 
   if (activeSection) {
@@ -426,7 +426,7 @@ export default function SettingsPanel({ onTabChange }: { onTabChange?: (tab: str
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
         </div>
         <h2 className="text-xl font-bold mb-1">{name}</h2>
-        <p className="text-sm text-[var(--color-text-secondary)]">📱 {user.phone} • @{user.username}</p>
+        <p className="text-sm" style={{color:"var(--color-text-secondary)"}}>{user.phone}{user.username ? " • @"+user.username : ""}</p>
       </div>
 
       {/* Settings Sections */}
@@ -437,9 +437,14 @@ export default function SettingsPanel({ onTabChange }: { onTabChange?: (tab: str
               onClick={() => setActiveSection(section.id)}
               className="w-full glass-sm p-4 rounded-2xl flex items-center gap-3 hover:opacity-80 transition"
             >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ background: section.color }}>{section.icon}</div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: section.color }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={section.iconPath}/>
+                </svg>
+              </div>
               <div className="flex-1 text-left">
-                <div className="font-medium">{section.label}</div>
+                <div className="font-medium text-sm">{section.label}</div>
+                {section.subtitle && <div className="text-xs mt-0.5" style={{color:'var(--color-text-secondary)'}}>{section.subtitle}</div>}
               </div>
               <ChevronIcon />
             </button>
@@ -450,8 +455,10 @@ export default function SettingsPanel({ onTabChange }: { onTabChange?: (tab: str
       {/* Premium & Other */}
       <div className="space-y-2 mt-6">
         <button className="w-full glass-sm p-4 rounded-2xl flex items-center gap-3 hover:opacity-80 transition">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg bg-purple-500">⭐</div>
-          <div className="flex-1 text-left font-medium">DRomGram Premium</div>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'linear-gradient(135deg,#8B5CF6,#6366F1)'}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div className="flex-1 text-left"><div className="font-medium text-sm">DRomGram Premium</div><div className="text-xs" style={{color:'var(--color-text-secondary)'}}>Эксклюзивные функции</div></div>
           <ChevronIcon />
         </button>
       </div>
@@ -460,7 +467,7 @@ export default function SettingsPanel({ onTabChange }: { onTabChange?: (tab: str
       <div className="mt-8 pt-6 border-t border-[var(--color-divider)] text-center">
         <p className="text-xs text-[var(--color-text-secondary)] mb-4">DRomGram для Web v2.0.0</p>
         <button onClick={() => logout()} className="w-full py-3 rounded-lg text-[var(--color-error)] font-medium hover:opacity-80">
-          🚪 Выход
+          Выход из аккаунта
         </button>
       </div>
     </div>

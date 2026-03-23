@@ -4,6 +4,7 @@ const { hashCode, compareCode, hashPassword, comparePassword } = require('../uti
 const { signToken } = require('../utils/jwt');
 const { sendSms } = require('./sms.service');
 const { sendOtpEmail } = require('./email.service');
+const { sendOtpEmail } = require('./email.service');
 const { normalizePhone, validatePhone } = require('../utils/phoneValidator');
 const { getAvatarColor } = require('../utils/avatarColor');
 const { NotFoundError, ValidationError, ConflictError, AuthenticationError } = require('../middleware/errorHandler');
@@ -35,6 +36,13 @@ async function sendOtp(phone, email) {
     }
   } else {
     await sendSms(normalized, code);
+  // Send OTP to email if provided
+  if (email && email.includes('@')) {
+    await sendOtpEmail(email, code);
+  } else {
+    // Log code in dev mode
+    console.log(`[DEV] OTP for ${normalized}: ${code}`);
+  }
   }
   
   const newCount = rateCount ? parseInt(rateCount) + 1 : 1;
