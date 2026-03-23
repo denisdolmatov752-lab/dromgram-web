@@ -161,7 +161,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final emailDisplay = widget.email ?? 'вашу почту';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bgDark,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
