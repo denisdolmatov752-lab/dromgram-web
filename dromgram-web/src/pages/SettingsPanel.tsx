@@ -145,30 +145,122 @@ function AccountSection({ onBack, user }: { onBack: () => void; user: any }) {
 
 // Chat Settings Section
 function ChatSettingsSection({ onBack }: { onBack: () => void }) {
-  const { fontSize, setFontSize } = useUIStore();
+  const { fontSize, setFontSize, theme, setTheme } = useUIStore();
   const [radius, setRadius] = useState(18);
-  const [dayNight, setDayNight] = useState(true);
+  const isDark = theme !== 'light';
+
+  const COLOR_THEMES = [
+    { id: 'pink-purple', label: 'Закат', colors: ['#FF6B9D', '#C44DFF'] },
+    { id: 'orange-red', label: 'Огонь', colors: ['#FF9500', '#FF3B30'] },
+    { id: 'yellow-green', label: 'Природа', colors: ['#FFCC00', '#34C759'] },
+    { id: 'blue-purple', label: 'Океан', colors: ['#5856D6', '#30B0C7'] },
+    { id: 'dark', label: 'Тёмная', colors: ['#1C1C1E', '#2C2C2E'] },
+  ];
+  const [colorTheme, setColorTheme] = useState('dark');
+
+  const applyRadius = (val: number) => {
+    setRadius(val);
+    document.documentElement.style.setProperty('--msg-radius', `${val}px`);
+  };
+
+  const applyFontSize = (val: number) => {
+    setFontSize(val);
+    document.documentElement.style.setProperty('--msg-font-size', `${val}px`);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-      <div className="w-full bg-[var(--color-bg)] rounded-t-3xl overflow-hidden">
-        <div className="flex items-center gap-3 p-4 border-b border-[var(--color-divider)]">
-          <button onClick={onBack}><BackArrowIcon /></button>
-          <h2 className="text-lg font-semibold">Настройки чатов</h2>
+    <div className="flex flex-col h-full" style={{ background: 'var(--color-bg)' }}>
+      <div className="flex items-center gap-3 p-4 border-b" style={{ borderColor: 'var(--color-divider)' }}>
+        <button onClick={onBack} className="p-2 rounded-xl hover:bg-white/10 transition-colors"><BackArrowIcon /></button>
+        <h2 className="text-lg font-semibold">Настройки чатов</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Font size */}
+        <div className="glass-sm p-4 rounded-2xl">
+          <label className="text-sm font-semibold block mb-3" style={{ color: 'var(--color-primary)' }}>
+            Размер текста сообщений — {fontSize}px
+          </label>
+          {/* Preview */}
+          <div className="p-3 rounded-xl mb-3" style={{ background: 'var(--color-surface)' }}>
+            <div className="p-2 rounded-lg mb-2 max-w-[80%]" style={{ background: 'var(--color-surface-hover)' }}>
+              <p style={{ fontSize: fontSize }}>Доброе утро!</p>
+            </div>
+            <div className="p-2 rounded-lg ml-auto max-w-[80%]" style={{ background: 'var(--color-primary)', textAlign: 'right' }}>
+              <p style={{ fontSize: fontSize, color: 'white' }}>В Токио утро</p>
+            </div>
+          </div>
+          <input
+            type="range" min="12" max="24" value={fontSize}
+            onChange={(e) => applyFontSize(parseInt(e.target.value))}
+            className="w-full accent-[var(--color-primary)]"
+          />
         </div>
-        <div className="p-4 space-y-6 max-h-[80vh] overflow-y-auto">
-          <div>
-            <label className="text-sm font-medium block mb-2">Размер текста ({fontSize}px)</label>
-            <input type="range" min="12" max="24" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="w-full" />
+
+        {/* Color themes */}
+        <div className="glass-sm p-4 rounded-2xl">
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Цветовая тема</p>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {COLOR_THEMES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setColorTheme(t.id)}
+                className="flex-shrink-0 rounded-2xl overflow-hidden transition-all"
+                style={{
+                  width: 72, height: 90,
+                  border: colorTheme === t.id ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  background: `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})`,
+                  position: 'relative',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+                  background: 'rgba(255,255,255,0.25)', borderRadius: 6, padding: '2px 6px',
+                  fontSize: 10, color: 'white', whiteSpace: 'nowrap',
+                }}>{t.label}</div>
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="text-sm font-medium block mb-2">Скругление углов ({radius}px)</label>
-            <input type="range" min="4" max="28" value={radius} onChange={(e) => setRadius(parseInt(e.target.value))} className="w-full" />
-          </div>
+        </div>
+
+        {/* Day/Night toggle */}
+        <div className="glass-sm p-4 rounded-2xl">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">День/Ночь</span>
-            <Toggle value={dayNight} onChange={setDayNight} />
+            <div>
+              <p className="text-sm font-semibold">
+                {isDark ? 'Тёмная тема' : 'Светлая тема'}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                Переключить на {isDark ? 'дневную' : 'ночную'} тему
+              </p>
+            </div>
+            <button
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              className="p-3 rounded-xl transition-all"
+              style={{ background: 'var(--color-surface)' }}
+            >
+              {isDark ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+            </button>
           </div>
+        </div>
+
+        {/* Bubble corner radius */}
+        <div className="glass-sm p-4 rounded-2xl">
+          <label className="text-sm font-semibold block mb-3" style={{ color: 'var(--color-primary)' }}>
+            Углы блоков с сообщениями — {radius}px
+          </label>
+          <input
+            type="range" min="4" max="28" value={radius}
+            onChange={(e) => applyRadius(parseInt(e.target.value))}
+            className="w-full accent-[var(--color-primary)]"
+          />
         </div>
       </div>
     </div>
